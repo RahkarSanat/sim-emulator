@@ -12,6 +12,12 @@ pub enum GnssConfig {
     STATUS(bool),
 }
 
+const AT_CFUN: &str = "AT+CFUN";
+const AT_IPR: &str = "AT+IPR";
+const AT_AND_W: &str = "AT&W";
+const CME_ERROR: &str = "+CME ERROR:0";
+const OK: &str = "\r\nOK\r\n";
+
 #[derive(PartialEq)]
 pub enum GSMConfig {}
 
@@ -97,12 +103,32 @@ impl Sim868 {
         tx
     }
 
-    pub fn process_at(&mut self, at_cmd: &str) -> Option<String> {
-        if self.power {
-            if at_cmd == "AT" {
-                return Some("AT\r\nOK".to_owned());
+    pub fn process_at(&mut self, at_cmd: &str) -> Option<Vec<String>> {
+        // if self.power {
+        // if at_cmd.trim() == "AT" {
+        if at_cmd.len() <= 2 {
+            return Some(vec!["AT\r\nOK".to_owned()]);
+        } else if at_cmd.starts_with(AT_CFUN) {
+            let t = at_cmd.as_bytes()[AT_CFUN.len()] as char;
+            if t == '=' {
+                let func = at_cmd.as_bytes()[AT_CFUN.len() + 1] as char;
+                let rst = at_cmd.as_bytes()[AT_CFUN.len() + 3] as char;
+                return Some(
+                    vec![
+                        "AT+CFUN=1,1\r\r\nOK\r\n".to_owned(),
+                        "\r\nRDY\r\n\r\n+CFUN: 1\r\n\r\n+CREG: 0\r\n\r\n+CPIN: READY\r\n\r\n+CGREG:2\r\n\r\nCall Ready\r\n".to_owned() 
+                ]);
+            } else if t == '?' {
+                return Some(vec![t.to_string()]);
+            } else {
+                return Some(vec![CME_ERROR.to_owned()]);
             }
+        } else if at_cmd.starts_with(AT_IPR) {
+            return Some(vec![at_cmd.to_owned() + "\r", OK.to_owned()]);
+        } else if at_cmd.starts_with(AT_AND_W) {
+            return Some(vec![at_cmd.to_owned() + "\r", OK.to_owned()]);
+        } else {
+            return Some(vec!["Not Implemendted Command".to_owned() + at_cmd]);
         }
-        None
     }
 }

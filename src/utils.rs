@@ -18,7 +18,7 @@ pub mod serial {
             let mut big_buffer: Vec<u8> = vec![0; 1000];
             loop {
                 if let Ok(to_send) = port_rx.recv_timeout(Duration::from_millis(2)) {
-                    port.write(to_send.as_bytes());
+                    let bytes_written = port.write(to_send.as_bytes()).unwrap();
                 }
                 if port.read_exact(&mut serial_buf).is_ok() {
                     big_buffer.push(serial_buf[0]);
@@ -26,11 +26,11 @@ pub mod serial {
                         match std::str::from_utf8(&big_buffer) {
                             Ok(buffer_str) => {
                                 if let Some((line, _)) = buffer_str.split_once("\r\n") {
-                                    tx.send(line.to_string());
+                                    tx.send(line.to_string()).unwrap();
                                     big_buffer.clear();
                                     // return Some(line.into());
                                 } else if let Some((line, _)) = buffer_str.split_once('\n') {
-                                    tx.send(line.to_string());
+                                    tx.send(line.to_string()).unwrap();
                                     big_buffer.clear();
 
                                     // return Some(line.into());

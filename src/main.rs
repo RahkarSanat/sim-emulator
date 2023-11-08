@@ -14,8 +14,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{prelude::*, widgets::Paragraph, Terminal};
-use sim868::{GnssConfiguration, Sim868};
+use ratatui::{prelude::*, Terminal};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let ports = serialport::available_ports().expect("No ports found!");

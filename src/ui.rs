@@ -31,14 +31,13 @@ pub fn run_ui<B: Backend>(
         .borders(Borders::ALL);
 
     let mut text_area = ScrollableTextArea::new(1000);
-    let mut screen_content = String::new();
     // for i in 0..110 {
     //     text_area.add_line(format!("{}: test\n", i));
     // }
     text_area.set_content_length(1000);
 
     let mut sim_device = Sim868::new(true, GnssConfiguration::default());
-    let gnss_tx = sim_device.start_gnss(tx.clone());
+    let _gnss_tx = sim_device.start_gnss(tx.clone());
 
     loop {
         {
@@ -67,11 +66,18 @@ pub fn run_ui<B: Backend>(
 
         if let Ok(line) = rx.recv_timeout(Duration::from_millis(10)) {
             // process receiving data from sim
-            text_area.add_line(line.clone());
-            if let Some(data) = sim_device.process_at(&line) {
-                text_area.add_line(data.clone());
-                tx.send(data);
+
+            let data = sim_device.process_at(&line).unwrap();
+            let mut answer = String::new();
+            for at in data {
+                answer += &format!("◁◁  {} -> ", &line);
+                if let Ok(_) = tx.send(at.clone()) {
+                    answer += &format!("▶ {}", &at);
+                } else {
+                    text_area.add_line("failed to send this command ->".to_string());
+                }
             }
+            text_area.add_line(answer);
         }
 
         if !event::poll(Duration::from_millis(16))? {
