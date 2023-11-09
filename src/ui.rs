@@ -61,16 +61,33 @@ pub fn run_ui<B: Backend>(
                 // frame.render_widget(text_area.widget(), main_screen[0]);
                 // text_area.add_line("test".to_owned());
                 text_area.render(frame, main_screen[0]);
+
+                let control_screen = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([
+                        Constraint::Percentage(5),
+                        Constraint::Percentage(5),
+                        Constraint::Percentage(90),
+                    ])
+                    .split(main_screen[1]);
+                frame.render_widget(
+                    Paragraph::new(format!(
+                        "^C to increase the CREG status {}",
+                        *sim_device.reg_status.lock().unwrap()
+                    ))
+                    .style(Style::default().bg(Color::White).fg(Color::Black)),
+                    control_screen[1],
+                );
             })?;
         }
 
         if let Ok(line) = rx.recv_timeout(Duration::from_millis(10)) {
             // process receiving data from sim
 
-            let data = sim_device.process_at(&line).unwrap();
+            let data = sim_device.process_at(&line, tx.clone()).unwrap();
             let mut answer = String::new();
+            answer += &format!("◁◁  {} -> ", &line);
             for at in data {
-                answer += &format!("◁◁  {} -> ", &line);
                 if let Ok(_) = tx.send(at.clone()) {
                     answer += &format!("▶ {}", &at);
                 } else {
@@ -97,6 +114,17 @@ pub fn run_ui<B: Backend>(
                     } else if key.code == KeyCode::Char('h') && key.modifiers == KeyModifiers::ALT {
                         let d = !sim_device.gnss.lock().unwrap().power;
                         sim_device.gnss.lock().unwrap().power = d;
+                    } else if key.code == KeyCode::Char('1')
+                        || key.code == KeyCode::Char('2')
+                        || key.code == KeyCode::Char('3')
+                        || key.code == KeyCode::Char('4') && key.modifiers == KeyModifiers::CONTROL
+                    {
+                        let a = 0;
+                        for i in 0..6 as u8 {
+                            // if key.code == KeyCode::Char(i as char + 0 as char) {}
+                        }
+                        *sim_device.reg_status.lock().unwrap() += 1;
+                        // sim_device.gnss.lock().unwrap().power = d;
                     }
                 }
             }
